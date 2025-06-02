@@ -1,55 +1,93 @@
-// src/components/TaskModal.js
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { addDoc, collection, updateDoc, doc } from "firebase/firestore";
 import { db } from "../firebase";
-import { addDoc, collection } from "firebase/firestore";
 
-const TaskModal = ({ isOpen, onClose }) => {
+const TaskModal = ({ isOpen, onClose, editingTask = null }) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  // Reset form when modal opens or editingTask changes
+  useEffect(() => {
+    if (editingTask) {
+      setTitle(editingTask.title);
+      setDescription(editingTask.description);
+    } else {
+      setTitle("");
+      setDescription("");
+    }
+  }, [editingTask, isOpen]);
 
   const handleSubmit = async () => {
-    await addDoc(collection(db, "tasks"), {
-      title,
-      description,
-      status: "todo",
-    });
-    setTitle("");
-    setDescription("");
-    console.log("Closing modal");
-    onClose(); // <-- This should trigger and log
+    if (!title.trim()) return;
+
+    setLoading(true);
+    try {
+      if (editingTask) {
+        console.log("Updating task:", editingTask.id);
+        const taskRef = doc(db, "tasks", editingTask.id);
+        await updateDoc(taskRef, {
+          title,
+          description,
+        });
+        console.log("Update successful");
+      } else {
+        console.log("Adding new task...");
+        await addDoc(collection(db, "tasks"), {
+          title,
+          description,
+          status: "todo",
+        });
+        console.log("Add successful");
+      }
+
+      // Reset form & close modal
+      setTitle("");
+      setDescription("");
+      onClose();
+    } catch (err) {
+      console.error("Error saving task:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-40">
-      <div className="bg-white p-6 rounded shadow-lg">
-        <h2 className="text-lg font-bold mb-4">Add New Task</h2>
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+      <div className="bg-white p-6 rounded-lg w-96">
+        <h2 className="text-xl font-bold mb-4">
+          {editingTask ? "Edit Task" : "Add Task"}
+        </h2>
         <input
           type="text"
           placeholder="Title"
-          className="border p-2 w-full mb-2"
+          className="w-full border px-3 py-2 mb-3 rounded"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
         <textarea
           placeholder="Description"
-          className="border p-2 w-full mb-2"
+          className="w-full border px-3 py-2 mb-3 rounded"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-        />
-        <div className="flex justify-end space-x-2">
+        ></textarea>
+        <div className="flex justify-end gap-2">
           <button
-            className="bg-gray-500 text-white px-4 py-2 rounded"
+            className="px-4 py-2 bg-gray-300 rounded"
             onClick={onClose}
+            disabled={loading}
           >
             Cancel
           </button>
+
           <button
-            className="bg-blue-600 text-white px-4 py-2 rounded"
+            className="px-4 py-2 bg-blue-600 text-white rounded"
             onClick={handleSubmit}
+            disabled={loading}
           >
-            Add
+            {loading ? "Saving..." : editingTask ? "Update" : "Add"}
           </button>
         </div>
       </div>

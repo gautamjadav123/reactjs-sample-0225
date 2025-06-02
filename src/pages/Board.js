@@ -1,3 +1,4 @@
+// src/pages/Board.js
 import React, { useState, useEffect } from "react";
 import Header from "../components/Header";
 import TaskCard from "../components/TaskCard";
@@ -8,6 +9,7 @@ import { db } from "../firebase";
 const Board = () => {
   const [tasks, setTasks] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState(null);
 
   useEffect(() => {
     const q = query(collection(db, "tasks"));
@@ -25,13 +27,26 @@ const Board = () => {
   const filteredTasks = (status) =>
     tasks.filter((task) => task.status === status);
 
+  const handleEdit = (task) => {
+    setEditingTask(task);
+    setModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setModalOpen(false);
+    setEditingTask(null);
+  };
+
   return (
     <div>
       <Header />
       <div className="p-4">
         <button
           className="bg-green-600 text-white px-4 py-2 rounded mb-4"
-          onClick={() => setModalOpen(true)}
+          onClick={() => {
+            setEditingTask(null);
+            setModalOpen(true);
+          }}
         >
           + Add Task
         </button>
@@ -41,14 +56,18 @@ const Board = () => {
             <div key={status} className="bg-gray-100 p-4 rounded">
               <h2 className="text-xl font-bold capitalize mb-2">{status}</h2>
               {filteredTasks(status).map((task) => (
-                <TaskCard key={task.id} task={task} />
+                <TaskCard key={task.id} task={task} onEdit={handleEdit} />
               ))}
             </div>
           ))}
         </div>
       </div>
 
-      <TaskModal isOpen={modalOpen} onClose={() => setModalOpen(false)} />
+      <TaskModal
+        isOpen={modalOpen}
+        onClose={handleCloseModal} // you already have this function
+        editingTask={editingTask} // pass editingTask here
+      />
     </div>
   );
 };
