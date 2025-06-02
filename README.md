@@ -1,7 +1,7 @@
 # React Task Board App
 
 ## 🔗 Deployed URL
-https://your-vercel-url.vercel.app/
+](https://reactjs-sample-0225-5o9r.onrender.com/)
 
 ## 📸 Demo Video
 https://www.loom.com/share/your-video-id
